@@ -1,0 +1,33 @@
+# /etc/armourd.conf
+# list in this file the file path of executables that
+# need be recovered on failure
+# syntax is:
+#
+## monitor all programs under user /bin folder
+# usr/local/bin/*
+#
+## additionally one can specify what to run in order
+## to reconver an application
+# /path/to/exec {
+#   pidfile : /path/to/pidfile
+#   command : recovery shell command string
+#   notify  : notify shell command string
+# }
+
+
+/home/alex/bin/*
+#   I am a comment
+home/alex/Projects/armourd/test4
+    {
+	pidfile : /var/run/foo.pid
+	command : "/home/alex/bin/foo.sh"
+    }
+/home/alex/Projects/armourd/config 
+/home/alex/Projects/armourd/test3{
+	pidfile : /var/run/foo.pid
+	command : "/home/alex/bin/foo.sh"
+	notify	: "logger \"foo\""
+    }
+
+
+
