@@ -31,16 +31,16 @@
  */
 struct proc_attr 
 {
-    pid_t pid;              /**< current pid; 0: not running */
-    char *comm;             /**< filename for logging */
-    uid_t uid;              /**< user id */
-    gid_t gid;              /**< group id */
-    char **cmdline;         /**< arguments */
-    char **environ;         /**< environment */
-    char *cwd;              /**< working directory */
-    char *root;             /**< root directory */
-    char *file[3];          /**< stdin, stdout and stderr files */
-    gid_t *gidlist;         /**< TODO: supplementary group IDs */
+    pid_t pid;      /**< current pid; 0: not running */
+    char *comm;     /**< filename for logging */
+    uid_t uid;      /**< user id */
+    gid_t gid;      /**< group id */
+    char **cmdline; /**< arguments */
+    char **environ; /**< environment */
+    char *cwd;      /**< working directory */
+    char *root;     /**< root directory */
+    char *file[3];  /**< stdin, stdout and stderr files */
+    gid_t *gidlist; /**< TODO: supplementary group IDs */
 };
 
 /*

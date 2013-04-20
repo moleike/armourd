@@ -45,45 +45,16 @@
 #include "armour_proc.h"
 #include "armour.h"
 
-void armour_add (armour_t *self, armour_proc *item)
+int _proc_pid_filter (const struct dirent *dirent)
 {
-    item->next = self->head;
-    self->head = item;
-}
+    char *endptr;
 
-void armour_rem (armour_t *self, armour_proc *item)
-{
-    armour_proc *p, **pp = &self->head;
-
-    for (p = self->head; p != NULL; p = p->next) {
-        if (p == item) {
-            *pp = p->next;
-            p->next = NULL;
-            return;
-        }
-	    pp = &p->next;
+    if (DT_DIR == dirent->d_type) {
+        (void)strtol (dirent->d_name, &endptr, 10);
+        if ('\0' == *endptr) // d_name contains only digits
+            return 1;
     }
-}
-
-void armour_apply_foreach (armour_t *self, armour_proc_func *func, void *data)
-{
-    armour_proc *p, *n;
-
-    for (p = self->head; p != NULL; p = n) {
-        n = p->next;
-        func (p, data);
-    }
-}
-
-armour_proc *armour_lookup (armour_t *self, armour_proc_func *func, void *data)
-{
-    armour_proc *p;
-
-    for (p = self->head; p != NULL; p = p->next)
-        if ((*func) (p, data))
-            return p;
-
-    return NULL;
+    return 0;
 }
 
 int _armour_compare_pid (armour_proc *p, void *data)
@@ -93,7 +64,6 @@ int _armour_compare_pid (armour_proc *p, void *data)
     if (p->pid == pid)
         return 1;
     return 0;
-
 }
 
 int _armour_compare_path (armour_proc *p, void *data)
@@ -103,7 +73,6 @@ int _armour_compare_path (armour_proc *p, void *data)
     if (strcmp (p->exe, exe) == 0)
         return 1;
     return 0;
-
 }
 
 /*
@@ -144,6 +113,118 @@ void armour_delete_all_procs (armour_t *self)
     armour_apply_foreach (self, armour_proc_delete, NULL);
 }
 
+int armour_run (armour_t *self)
+{
+    struct epoll_event events[10];
+    int i, nfds;
+
+    if (armour_listen (self) < 0)
+        return 1;
+
+    self->running = 1;
+
+    while (self->running) {
+        nfds = epoll_wait (self->epollfd, events, sizeof events, -1);
+
+        if (nfds < 0) {
+            if (EINTR == errno)
+                continue;
+            else
+                return 1;
+        }
+ 
+        for (i = 0; i < nfds; i++) {
+            armour_event *ev = (armour_event *) events[i].data.ptr;
+            if (ev->cb (ev->fd, events[i].events, ev->data) < 0) {
+                /* TODO: this needs proper handling */
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+int armour_init (armour_t **handle, const char *config_file)
+{
+    armour_t *self;
+    int n;
+    struct dirent **namelist = NULL;
+
+    self = malloc (sizeof *self);
+    if (!self)
+	    return -1;
+    memset (self, 0, sizeof *self);
+
+    if (config_file)
+        if (armour_config_read (self, config_file) < 0)
+            return -1;
+
+    n = scandir ("/proc", &namelist, _proc_pid_filter, versionsort);
+    if (n < 0)
+        return -1;
+    else {
+        while (n--) {
+            armour_proc *p;
+            long pid;
+            char *exe;
+
+            pid = strtol (namelist[n]->d_name, NULL, 10);
+            exe = armour_proc_readlink (pid, "exe");
+            if (!exe)
+                continue;
+
+            p = armour_lookup (self, _armour_compare_path, (void*)exe);
+            
+            if (p) {
+                if (armour_proc_set_param (p, pid) == -1) {
+                    /* failed to initialize */
+                    warn ("failed to track %s", p->exe);
+		        }
+            }
+            free (namelist[n]);
+            free (exe);
+        }
+        free (namelist);
+    }
+    
+    self->epollfd = epoll_create1 (EPOLL_CLOEXEC);
+    if (self->epollfd < 0)
+        return -1;
+
+    if (armour_add_signalfd (self) < 0)
+        return -1;
+
+    if (armour_add_nlsock (self) < 0)
+        return -1;
+
+    armour_add_filter (self);
+
+    *handle = self; /* return instance to the caller */
+    return 0;
+}
+
+void armour_apply_foreach (armour_t *self, armour_proc_func *func, void *data)
+{
+    armour_proc *p, *n;
+
+    for (p = self->head; p != NULL; p = n) {
+        n = p->next;
+        func (p, data);
+    }
+}
+
+armour_proc *armour_lookup (armour_t *self, armour_proc_func *func, void *data)
+{
+    armour_proc *p;
+
+    for (p = self->head; p != NULL; p = p->next)
+        if ((*func) (p, data))
+            return p;
+
+    return NULL;
+}
+
 int armour_listen (armour_t *self)
 {
     struct iovec iov[3];
@@ -165,13 +246,13 @@ int armour_listen (armour_t *self)
     op = PROC_CN_MCAST_LISTEN; /* to stop it PROC_CN_MCAST_IGNORE */
     iov[2] = (struct iovec) { &op, sizeof op };
 
-    if (writev (self->sock, iov, sizeof iov / sizeof iov[0]) < 0)
+    if (writev (self->sock.fd, iov, sizeof iov / sizeof iov[0]) < 0)
         return -1;
 
     return 0;
 }
 
-int armour_filter (armour_t *self)
+int armour_add_filter (armour_t *self)
 {
     struct sock_fprog fprog;
     struct sock_filter filter[] = {
@@ -236,13 +317,14 @@ int armour_filter (armour_t *self)
     fprog.filter = filter;
     fprog.len = sizeof filter / sizeof filter[0]; /* number of filter blocks */
 
-    setsockopt (self->sock, SOL_SOCKET, SO_ATTACH_FILTER, &fprog, sizeof fprog);
+    setsockopt (self->sock.fd, SOL_SOCKET, SO_ATTACH_FILTER, &fprog, sizeof fprog);
 
     return 0;
 }
 
-int armour_handle (armour_t *self)
+int armour_nlsock_handler (int sock, unsigned int events, void *data)
 {
+    armour_t *self = (armour_t *) data;
     struct sockaddr_nl addr;
     struct msghdr msghdr;
     struct nlmsghdr *nlmsghdr;
@@ -250,10 +332,12 @@ int armour_handle (armour_t *self)
     char buf[4096];
     ssize_t len;
 
+    (void)events;
+
     msghdr = (struct msghdr) { &addr, sizeof addr, iov, 1, NULL, 0, 0 };
     iov[0] = (struct iovec) { buf, sizeof buf };
 
-    len = recvmsg (self->sock, &msghdr, 0);
+    len = recvmsg (sock, &msghdr, 0);
     if (len < 0)
         return -1;
 
@@ -311,163 +395,80 @@ int armour_handle (armour_t *self)
     return 0;
 }
 
-int _proc_pid_filter (const struct dirent *dirent)
+int armour_signal_handler (int fd, unsigned int events, void *data)
 {
-    char *endptr;
+    armour_t *self = (armour_t *) data;
+    struct signalfd_siginfo siginfo;
+    int ret;
+    (void)events;
 
-    if (DT_DIR == dirent->d_type) {
-        (void)strtol (dirent->d_name, &endptr, 10);
-        if ('\0' == *endptr) // d_name contains only digits
-            return 1;
+    ret = read (fd, &siginfo, sizeof siginfo);
+    if (ret < 0)
+        return -1;
+
+    if (SIGCHLD == siginfo.ssi_signo) {
+        pid_t pid;
+        while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
+            DPRINT ("child %d exited", pid);
+    } else {
+        psignal (siginfo.ssi_signo, "armourd");
+        self->running = 0;
     }
     return 0;
 }
 
-int armour_init (armour_t **handle, const char *config_file)
+int armour_add_signalfd (armour_t *self)
 {
-    armour_t *self;
-    int n;
-    struct dirent **namelist = NULL;
-    struct sockaddr_nl addr;
+    struct epoll_event ev;
     sigset_t sigmask;
     int signals[] = {SIGTERM, SIGINT, SIGQUIT, SIGCHLD};
+    int ret, fd, i;
 
-    self = malloc (sizeof *self);
-    if (!self)
-	    return -1;
-    memset (self, 0, sizeof *self);
-
-    if (config_file)
-        if (armour_config_read (self, config_file) < 0)
-            return -1;
-
-    n = scandir ("/proc", &namelist, _proc_pid_filter, versionsort);
-    if (n < 0)
-        return -1;
-    else {
-        while (n--) {
-            armour_proc *p;
-            long pid;
-            char *exe;
-
-            pid = strtol (namelist[n]->d_name, NULL, 10);
-            exe = armour_proc_readlink (pid, "exe");
-            if (!exe)
-                continue;
-
-            p = armour_lookup (self, _armour_compare_path, (void*)exe);
-            
-            if (p) {
-                if (armour_proc_set_param (p, pid) == -1) {
-                    /* failed to initialize */
-                    warn ("failed to track %s", p->exe);
-		        }
-            }
-            free (namelist[n]);
-            free (exe);
-        }
-        free (namelist);
-    }
-    
-    /* 
-     * signals
-     */
     sigemptyset (&sigmask);
     
-    for (n = 0; n < (sizeof signals / sizeof signals[0]); n++)
-        sigaddset (&sigmask, signals[n]);
+    for (i = 0; i < (sizeof signals / sizeof signals[0]); i++)
+        sigaddset (&sigmask, signals[i]);
     
     sigprocmask (SIG_BLOCK, &sigmask, NULL);
 
-    self->signalfd = signalfd (-1, &sigmask, SFD_CLOEXEC);
-    if (signalfd < 0)
+    fd = signalfd (-1, &sigmask, SFD_CLOEXEC);
+    if (fd < 0)
         return -1;
 
-    /*
-     * netlink socket
-     */
+    self->signal = (struct armour_event) { .cb = armour_signal_handler, .fd = fd, .data = self };
+
+    ev = (struct epoll_event) { EPOLLIN, { .ptr = &self->signal } };
+
+    ret = epoll_ctl (self->epollfd, EPOLL_CTL_ADD, fd, &ev);
+    if (ret < 0)
+        return 1;
+
+    return 0;
+}
+
+int armour_add_nlsock (armour_t *self)
+{
+    struct epoll_event ev;
+    struct sockaddr_nl addr;
+    int sock;
+    int ret;
+
     addr.nl_family = AF_NETLINK;
     addr.nl_pid = getpid ();
     addr.nl_groups = CN_IDX_PROC;
 
-    self->sock = socket (PF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC, // SOCK_NONBLOCK 
+    sock = socket (PF_NETLINK, SOCK_DGRAM | SOCK_CLOEXEC, // SOCK_NONBLOCK 
                          NETLINK_CONNECTOR);
 
-    bind (self->sock, (struct sockaddr *)&addr, sizeof addr);
+    bind (sock, (struct sockaddr *)&addr, sizeof addr);
 
-    armour_filter (self);
+    self->sock = (struct armour_event) { armour_nlsock_handler, sock, self };
+    ev = (struct epoll_event) { EPOLLIN, { .ptr = &self->sock } };
 
-    /*
-     * epoll
-     */
-    self->epollfd = epoll_create1 (EPOLL_CLOEXEC);
-    if (self->epollfd < 0)
-        return -1;
-
-    *handle = self; /* return instance to the caller */
-    return 0;
-}
-
-int armour_run (armour_t *self)
-{
-    struct epoll_event ev[2], events[2];
-    struct signalfd_siginfo siginfo;
-    int nfds;
-    int ret; /* 0: success, 1: failure */
-
-    ret = armour_listen (self);
-    if (ret < 0)
-        return 1;
-  
-    ev[0] = (struct epoll_event) { EPOLLIN, { .fd = self->signalfd } };
-    ret = epoll_ctl (self->epollfd, EPOLL_CTL_ADD, self->signalfd, &ev[0]);
+    ret = epoll_ctl (self->epollfd, EPOLL_CTL_ADD, sock, &ev);
     if (ret < 0)
         return 1;
 
-    ev[1] = (struct epoll_event) { EPOLLIN, { .fd = self->sock } };
-    ret = epoll_ctl (self->epollfd, EPOLL_CTL_ADD, self->sock, &ev[1]);
-    if (ret < 0)
-        return 1;
-
-    /*
-     * not used yet, but will be when we need
-     * to do cleanups after the loop breaks
-     */
-    self->running = 1;
-    
-    while (self->running) {
-        nfds = epoll_wait (self->epollfd, events, 1, -1);
-
-        if (nfds < 0) {
-            if (EINTR == errno)
-                continue;
-            else
-                return 1;
-        }
- 
-        while (nfds--) {
-            if (events[nfds].data.fd == self->signalfd) {
-                ret = read (self->signalfd, &siginfo, sizeof siginfo);
-                if (ret < 0)
-                    return 1;
-
-                if (SIGCHLD == siginfo.ssi_signo) {
-                    pid_t pid;
-                    while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
-                        DPRINT ("child %d exited", pid);
-                } else {
-                    psignal (siginfo.ssi_signo, "armourd");
-                    return 0;
-                }
-            }
-
-            if (events[nfds].data.fd == self->sock) {
-                ret = armour_handle (self);
-                if (ret < 0)
-                    return 1;
-            }
-        }
-    }
     return 0;
 }
 

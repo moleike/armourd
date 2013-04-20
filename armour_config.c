@@ -154,7 +154,7 @@ int armour_config_read (armour_t *self, const char *filepath)
                             while (cc--) {
                                 char *file = NULL;
                                 if (check_file (gl.gl_pathv[cc], &file) == 0) {
-                                        armour_add (self, armour_proc_new (file? file: gl.gl_pathv[cc], NULL));
+                                        armour_add_proc (self, armour_proc_new (file? file: gl.gl_pathv[cc], NULL));
                                         free (file);
                                 }
                             }
@@ -229,7 +229,7 @@ int armour_config_read (armour_t *self, const char *filepath)
                             free (filepath);
                             filepath = linkname;
                         }
-                        armour_add (self, armour_proc_new (filepath, &options));
+                        armour_add_proc (self, armour_proc_new (filepath, &options));
                         free (filepath);
                         state = DEFAULT;
                     }

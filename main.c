@@ -137,7 +137,7 @@ int main (int argc, char **argv)
         errx (EXIT_FAILURE, "already running");
     }
     if (armour_init (&self, config_file) < 0) {
-	    errx (EXIT_FAILURE, "failed to start");
+        errx (EXIT_FAILURE, "failed to start");
     }
     return armour_run (self);
 }
