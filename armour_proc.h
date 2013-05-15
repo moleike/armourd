@@ -64,7 +64,7 @@ struct armour_proc
     char *exe;                      /**< application pathname */
     unsigned short flags;           /**< additional flags */
     struct proc_attr;               /**< entries from /proc/<pid> */
-    struct armour_options *options; /**< TODO: optional parameters */
+    struct armour_options options;  /**< TODO: optional parameters */
     struct armour_proc *next;
 };
 

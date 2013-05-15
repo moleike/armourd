@@ -227,21 +227,27 @@ int armour_proc_set_param_cmdline (armour_proc *p, void *data)
 
 int armour_proc_set_param_comm (armour_proc *p, void *data)
 {
-    //FILE *fp = NULL;
+    FILE *fp = NULL;
+    int ret = 0;
+    (void)data;
 
-    //fp = fdopen (_armour_proc_open (p->pid, "stat"), "r");
-    //if (!fp)
+    /*
+     * comm file isn't implemented in older kernels
+     */
+    //p->comm = armour_proc_read (p->pid, "comm");
+    //if (!p->comm) 
     //    return -1;
 
-    ///*if (1 > fscanf (fp, "%*d (%m[^)])",*/
-    //if (1 > fscanf (fp, "%*d (%m[^)])", &p->comm)) {
-    //    p->comm = strdup ("unkown");
-    //}
-    (void)data;
-    p->comm = armour_proc_read (p->pid, "comm");
-    if (!p->comm) 
+    fp = fdopen (_armour_proc_open (p->pid, "stat"), "r");
+    if (!fp)
         return -1;
-    return 0;
+
+    if (1 > fscanf (fp, "%*d (%m[^)])", &p->comm)) {
+        ret = -1;
+    }
+
+    fclose (fp);
+    return ret;
 }
 
 int armour_proc_set_param_io (armour_proc *p, void *data)
@@ -343,7 +349,7 @@ void armour_proc_free_param (armour_proc *p)
     free (p->file[0]);
     free (p->file[1]);
     free (p->file[2]);
-    free (p->options);
+    //free (p->options); // TODO
 
     /* it masks errors such double free's, 
      * so eventually should be removed */
@@ -368,7 +374,7 @@ armour_proc *armour_proc_new (char *filename, armour_options *op)
     }
 
     if (op)
-        newp->options = op;
+        newp->options = *op;
     
     return newp;
 }
