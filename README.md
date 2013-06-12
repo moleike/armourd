@@ -19,7 +19,7 @@ children terminate before restart.
 
 armourd is Linux-only by design, because it relies upon interfaces such as
 `epoll(7)` and `netlink(7)`, and most notably the the use of the `Proc
-Connector`. It also makes extensive use of `procfs` files that aren't available
+Connector`. It also makes extensive use of `proc(5)` files that aren't available
 in other unices.
 
 armourd is best suited for systems using sysvinit, as newer init systems, such

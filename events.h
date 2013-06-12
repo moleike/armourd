@@ -1,5 +1,5 @@
 /* vim: set sw=4 ts=4 et : */
-/* debug.h
+/* armour.h: process tracking
  *
  * Copyright (C) 2012 Alexandre Moreno
  *
@@ -18,25 +18,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#ifndef _ARMOUR_EVENTS_H
+#define _ARMOUR_EVENTS_H
 
-#include <err.h>
+#include <inttypes.h>
 
-#ifndef DEBUG
-#define DEBUG_ 0
-#else   
-#define DEBUG_ 1
+typedef struct armour_evdata armour_evdata;
+typedef struct armour_evnode armour_evnode;
+
+struct armour_evdata
+{
+    int (*cb)(int , uint32_t, void *);  /**< function pointer to event handler */
+    int fd;                             /**< fd/sock associated with the event */
+    void *user_data;                    /**< user data */
+};
+
+struct armour_evnode
+{
+    struct armour_evdata;
+    armour_evnode *next;
+};
+
 #endif
-
-/*
- * we do want the debug statements to be seen by the compiler,
- * they will be optimized away when not in a debug build
- */
-#define DPRINT(fmt,...)    \
-            do { if (DEBUG_) warnx("(%s) " fmt, __func__, ##__VA_ARGS__); } while (0)
-#define DWARN(fmt,...)     \
-            do { if (DEBUG_) warn("(%s) " fmt, __func__, ##__VA_ARGS__); } while (0)
-
-
-#endif // _DEBUG_H

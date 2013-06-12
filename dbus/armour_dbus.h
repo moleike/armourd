@@ -1,5 +1,5 @@
 /* vim: set sw=4 ts=4 et : */
-/* debug.h
+/* armour_dbus.h: dbus interface
  *
  * Copyright (C) 2012 Alexandre Moreno
  *
@@ -18,25 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#ifndef _ARMOUR_DBUS_H
+#define _ARMOUR_DBUS_H
 
-#include <err.h>
+#include "armour.h"
+#include "config.h"
 
-#ifndef DEBUG
-#define DEBUG_ 0
-#else   
-#define DEBUG_ 1
+#ifdef HAVE_DBUS
+#include <dbus/dbus.h>
+int armour_dbus_init (armour_t *self);
+#else
+static inline 
+int armour_dbus_init (armour_t *self) { return 0; }
 #endif
 
-/*
- * we do want the debug statements to be seen by the compiler,
- * they will be optimized away when not in a debug build
- */
-#define DPRINT(fmt,...)    \
-            do { if (DEBUG_) warnx("(%s) " fmt, __func__, ##__VA_ARGS__); } while (0)
-#define DWARN(fmt,...)     \
-            do { if (DEBUG_) warn("(%s) " fmt, __func__, ##__VA_ARGS__); } while (0)
-
-
-#endif // _DEBUG_H
+#endif /* _ARMOUR_DBUS_H */

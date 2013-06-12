@@ -44,8 +44,9 @@
 #include "debug.h"
 #include "armour_proc.h"
 #include "armour.h"
+#include "list.h"
 
-int _proc_pid_filter (const struct dirent *dirent)
+static int _proc_pid_filter (const struct dirent *dirent)
 {
     char *endptr;
 
@@ -57,175 +58,7 @@ int _proc_pid_filter (const struct dirent *dirent)
     return 0;
 }
 
-int _armour_compare_pid (armour_proc *p, void *data)
-{
-    pid_t pid = (pid_t)(intptr_t)data;
-
-    if (p->pid == pid)
-        return 1;
-    return 0;
-}
-
-int _armour_compare_path (armour_proc *p, void *data)
-{
-    char *exe = (char *)data;
-
-    if (strcmp (p->exe, exe) == 0)
-        return 1;
-    return 0;
-}
-
-/*
- * returns true if there is another entry of p->exe not initialized
- */
-int _armour_get_next_free (armour_proc *p, void *data)
-{
-    armour_proc *q = (armour_proc *)data;
-
-    if ((strcmp (p->exe, q->exe) == 0)
-    && (0 == p->pid)) {
-        return 1;
-    }
-    return 0;
-}
-
-/*
- * returns true if there is another entry of p->exe
- */
-int _armour_get_next (armour_proc *p, void *data)
-{
-    armour_proc *q = (armour_proc *)data;
-
-    if ((strcmp (p->exe, q->exe) == 0)
-    && (q->pid != p->pid)) {
-        return 1;
-    }
-    return 0;
-}
-
-void armour_print_all_procs (armour_t *self)
-{
-    armour_apply_foreach (self, armour_proc_dump , NULL);
-}
-
-void armour_delete_all_procs (armour_t *self)
-{
-    armour_apply_foreach (self, armour_proc_delete, NULL);
-}
-
-int armour_run (armour_t *self)
-{
-    struct epoll_event events[10];
-    int i, nfds;
-
-    if (armour_listen (self) < 0)
-        return 1;
-
-    self->running = 1;
-
-    while (self->running) {
-        nfds = epoll_wait (self->epollfd, events, sizeof events, -1);
-
-        if (nfds < 0) {
-            if (EINTR == errno)
-                continue;
-            else
-                return 1;
-        }
- 
-        for (i = 0; i < nfds; i++) {
-            armour_event *ev = (armour_event *) events[i].data.ptr;
-            if (ev->cb (ev->fd, events[i].events, ev->data) < 0) {
-                /* TODO: this needs proper handling */
-                return 1;
-            }
-        }
-    }
-
-    return 0;
-}
-
-int armour_init (armour_t **handle, const char *config_file)
-{
-    armour_t *self;
-    int n;
-    struct dirent **namelist = NULL;
-
-    self = malloc (sizeof *self);
-    if (!self)
-	    return -1;
-    memset (self, 0, sizeof *self);
-
-    if (config_file)
-        if (armour_config_read (self, config_file) < 0)
-            return -1;
-
-    n = scandir ("/proc", &namelist, _proc_pid_filter, versionsort);
-    if (n < 0)
-        return -1;
-    else {
-        while (n--) {
-            armour_proc *p;
-            long pid;
-            char *exe;
-
-            pid = strtol (namelist[n]->d_name, NULL, 10);
-            exe = armour_proc_readlink (pid, "exe");
-            if (!exe)
-                continue;
-
-            p = armour_lookup (self, _armour_compare_path, (void*)exe);
-            
-            if (p) {
-                if (armour_proc_set_param (p, pid) == -1) {
-                    /* failed to initialize */
-                    warn ("failed to track %s", p->exe);
-		        }
-            }
-            free (namelist[n]);
-            free (exe);
-        }
-        free (namelist);
-    }
-    
-    self->epollfd = epoll_create1 (EPOLL_CLOEXEC);
-    if (self->epollfd < 0)
-        return -1;
-
-    if (armour_add_signalfd (self) < 0)
-        return -1;
-
-    if (armour_add_nlsock (self) < 0)
-        return -1;
-
-    armour_add_filter (self);
-
-    *handle = self; /* return instance to the caller */
-    return 0;
-}
-
-void armour_apply_foreach (armour_t *self, armour_proc_func *func, void *data)
-{
-    armour_proc *p, *n;
-
-    for (p = self->head; p != NULL; p = n) {
-        n = p->next;
-        func (p, data);
-    }
-}
-
-armour_proc *armour_lookup (armour_t *self, armour_proc_func *func, void *data)
-{
-    armour_proc *p;
-
-    for (p = self->head; p != NULL; p = p->next)
-        if ((*func) (p, data))
-            return p;
-
-    return NULL;
-}
-
-int armour_listen (armour_t *self)
+static int armour_listen (armour_t *self)
 {
     struct iovec iov[3];
     char buf[NLMSG_HDRLEN];
@@ -252,7 +85,7 @@ int armour_listen (armour_t *self)
     return 0;
 }
 
-int armour_add_filter (armour_t *self)
+static int armour_add_filter (armour_t *self)
 {
     struct sock_fprog fprog;
     struct sock_filter filter[] = {
@@ -322,7 +155,7 @@ int armour_add_filter (armour_t *self)
     return 0;
 }
 
-int armour_nlsock_handler (int sock, unsigned int events, void *data)
+static int armour_nlsock_handler (int sock, unsigned int events, void *data)
 {
     armour_t *self = (armour_t *) data;
     struct sockaddr_nl addr;
@@ -395,7 +228,7 @@ int armour_nlsock_handler (int sock, unsigned int events, void *data)
     return 0;
 }
 
-int armour_signal_handler (int fd, unsigned int events, void *data)
+static int armour_signal_handler (int fd, unsigned int events, void *data)
 {
     armour_t *self = (armour_t *) data;
     struct signalfd_siginfo siginfo;
@@ -417,7 +250,7 @@ int armour_signal_handler (int fd, unsigned int events, void *data)
     return 0;
 }
 
-int armour_add_signalfd (armour_t *self)
+static int armour_add_signalfd (armour_t *self)
 {
     struct epoll_event ev;
     sigset_t sigmask;
@@ -435,7 +268,8 @@ int armour_add_signalfd (armour_t *self)
     if (fd < 0)
         return -1;
 
-    self->signal = (struct armour_event) { .cb = armour_signal_handler, .fd = fd, .data = self };
+    self->signal = (struct armour_evdata) { .cb = armour_signal_handler, 
+                                            .fd = fd, .user_data= self };
 
     ev = (struct epoll_event) { EPOLLIN, { .ptr = &self->signal } };
 
@@ -446,7 +280,7 @@ int armour_add_signalfd (armour_t *self)
     return 0;
 }
 
-int armour_add_nlsock (armour_t *self)
+static int armour_add_nlsock (armour_t *self)
 {
     struct epoll_event ev;
     struct sockaddr_nl addr;
@@ -462,7 +296,7 @@ int armour_add_nlsock (armour_t *self)
 
     bind (sock, (struct sockaddr *)&addr, sizeof addr);
 
-    self->sock = (struct armour_event) { armour_nlsock_handler, sock, self };
+    self->sock = (struct armour_evdata) { armour_nlsock_handler, sock, self };
     ev = (struct epoll_event) { EPOLLIN, { .ptr = &self->sock } };
 
     ret = epoll_ctl (self->epollfd, EPOLL_CTL_ADD, sock, &ev);
@@ -472,15 +306,127 @@ int armour_add_nlsock (armour_t *self)
     return 0;
 }
 
+int armour_run (armour_t *self)
+{
+    struct epoll_event events[10];
+    int i, nfds;
+
+    if (armour_listen (self) < 0)
+        return 1;
+
+    self->running = 1;
+
+    while (self->running) {
+        nfds = epoll_wait (self->epollfd, events, sizeof events, -1);
+
+        if (nfds < 0) {
+            if (EINTR == errno)
+                continue;
+            else
+                return 1;
+        }
+ 
+        for (i = 0; i < nfds; i++) {
+            armour_evdata *ev = events[i].data.ptr;
+
+            if (ev->cb (ev->fd, events[i].events, ev->user_data) < 0)
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
+int armour_init (armour_t **handle, const char *config_file)
+{
+    armour_t *self;
+    int n;
+    struct dirent **namelist = NULL;
+
+    self = malloc (sizeof *self);
+    if (!self)
+	    return -1;
+    memset (self, 0, sizeof *self);
+
+    if (config_file)
+        if (armour_config_read (self, config_file) < 0)
+            return -1;
+
+    n = scandir ("/proc", &namelist, _proc_pid_filter, versionsort);
+    if (n < 0)
+        return -1;
+    else {
+        while (n--) {
+            armour_proc *p;
+            long pid;
+            char *exe;
+
+            pid = strtol (namelist[n]->d_name, NULL, 10);
+            exe = armour_proc_readlink (pid, "exe");
+            if (!exe)
+                continue;
+
+            if ((p = armour_lookup_exe (self, exe))) {
+                if (armour_proc_set_param (p, pid) == -1) {
+                    /* failed to initialize */
+                    warn ("failed to track %s", p->exe);
+		        }
+            }
+            free (namelist[n]);
+            free (exe);
+        }
+        free (namelist);
+    }
+    
+    self->epollfd = epoll_create1 (EPOLL_CLOEXEC);
+    if (self->epollfd < 0)
+        return -1;
+
+    if (armour_add_signalfd (self) < 0)
+        return -1;
+
+    if (armour_add_nlsock (self) < 0)
+        return -1;
+
+    armour_add_filter (self);
+
+    *handle = self; /* return instance to the caller */
+    return 0;
+}
+
+armour_proc *armour_add_new (armour_t *self, const char *filepath)
+{
+    armour_proc *p = NULL; 
+    if ((p = armour_proc_new (filepath, NULL)))
+        LIST_ADD (self->head, p);
+    return p;
+}
+
+armour_proc *armour_lookup_pid (armour_t *self, pid_t pid)
+{
+    return LIST_LOOKUP (self->head, pid, pid);
+}
+
+armour_proc *armour_lookup_exe (armour_t *self, const char *path)
+{
+    return LIST_LOOKUP_STR (self->head, exe, path);
+}
+
+void armour_apply_foreach (armour_t *self, armour_proc_func *func, void *data)
+{
+    armour_proc *proc;
+    LIST_FOREACH_SAFE (self->head, proc)
+        (*func) (proc, data);
+}
+
 int armour_remove_watch (armour_t *self, pid_t pid)
 {
     armour_proc *p;
     
-    p = armour_lookup (self, _armour_compare_pid, (void*)(intptr_t)pid);
+    p = armour_lookup_pid (self, pid);
     if (p) {
         DPRINT ( "removing watch from %s", p->exe);
-        p->flags &= ~ARPROC_WATCHED;
-        armour_proc_free_param (p);
+        p->flags &= ~ARPROC_RUNNING;
     }
     return 0;
 }
@@ -489,12 +435,13 @@ int armour_recover (armour_t *self, pid_t pid)
 {
     armour_proc *p;
     
-    p = armour_lookup (self, _armour_compare_pid, (void*)(intptr_t)pid);
+    p = armour_lookup_pid (self, pid);
     if (p){
         if (armour_proc_recover (p, NULL) < 0) {
             DPRINT ("cannot recover %s", p->exe);
             return -1;
-        }
+        } 
+        p->flags |= ARPROC_RECOVERING;
         DPRINT ("recovered %s", p->exe);
     }
     return 0;
@@ -502,7 +449,8 @@ int armour_recover (armour_t *self, pid_t pid)
 
 int armour_update_watch (armour_t *self, pid_t pid)
 {
-    armour_proc *p;
+    armour_proc *proc;
+    pid_t ppid;
     char *exe;
 
     exe = armour_proc_readlink (pid, "exe");
@@ -510,61 +458,79 @@ int armour_update_watch (armour_t *self, pid_t pid)
         DWARN ("readlink");
         return -1;
     }
+    /*
+     * are we watching processes with file path 'exe'?
+     */
+    proc = armour_lookup_exe (self, exe);
+    if (!proc) {
+        free (exe);
+        return 0;
+    }
 
-    p = armour_lookup (self, _armour_compare_path, (void*)exe);
+    /*
+     * if the parent of pid process hasn't exited
+     * yet, we should find it here
+     */
+    ppid = armour_proc_getppid (pid, NULL);
+    DPRINT ("PARENT PID is: %d", ppid);
+    proc = armour_lookup_pid (self, ppid);
+
+    if (proc) {
+        proc->pid = pid;
+        proc->flags |= ARPROC_RUNNING; /* redundant */
+        proc->flags &= ~ARPROC_SETSID; /* setsid()'s itself */
+        DPRINT ("updated watch for %s", proc->exe);
+        free (exe);
+        return 0;
+    }
+    /*
+     * if parent exited prior to child setsid(), not common,
+     */
+    LIST_FOREACH (self->head, proc) {
+        if (strcmp (proc->exe, exe) == 0) {
+            if (!(proc->flags & ARPROC_RUNNING)) {
+                proc->pid = pid;
+                proc->flags |= ARPROC_RUNNING;
+                proc->flags &= ~ARPROC_SETSID;
+                DPRINT ("updated watch for %s", proc->exe);
+                break;
+            }
+        }
+    }
     free (exe);
-
-    if (!p)
-        return 0;
-
-    if (p->flags & ARPROC_WATCHED)
-        return 0;
-
-    if (p->pid != 0) {
-        armour_proc_free_param (p);
-    }
-    if (armour_proc_set_param (p, pid) == -1) {
-        DWARN ("failed to track %s", p->exe);
-        return -1;
-    }
-
-    /* remove the flag ARPROC_SETSID, as this process
-     * setsid()'s itself */
-    p->flags &= ~ARPROC_SETSID;
-
-    DPRINT ("updated watch for %s", p->exe);
     return 0;
 }
 
 int armour_add_watch (armour_t *self, pid_t pid)
 {
-    armour_proc *p;
-    char *exe;
+    armour_proc *proc;
+    char *path;
 
-    exe = armour_proc_readlink (pid, "exe");
-    if (!exe) {
+    path = armour_proc_readlink (pid, "exe");
+    if (!path) {
         DWARN ("readlink");
         return -1;
     }
 
-    p = armour_lookup (self, _armour_compare_path, (void*)exe);
-    free (exe);
-
-    if (!p)
-        return 0;
-
-    if (p->pid != 0) {
-        DPRINT ("already watching %s", p->exe);
-        p->flags |= ARPROC_WATCHED;
-        return 0;
+    LIST_FOREACH (self->head, proc) {
+        if (strcmp (proc->exe, path) == 0) {
+            if (proc->flags & ARPROC_RECOVERING) {
+                proc->pid = pid;
+                DPRINT ("flags are %x", proc->flags);
+                proc->flags &= ~ARPROC_RECOVERING;
+                DPRINT ("recover watch to %s", proc->exe);
+                break;
+            } else if (!(proc->flags & ARPROC_RUNNING)) {
+                armour_proc_free_param (proc);
+                armour_proc_set_param (proc, pid);
+                proc->flags |= ARPROC_RUNNING;
+                DPRINT ("adding watch to %s", proc->exe);
+                break;
+            }
+        }
     }
 
-    if (armour_proc_set_param (p, pid) == -1) {
-        DWARN ("failed to track %s", p->exe);
-        return -1;
-    }
-
-    DPRINT ("adding watch to %s", p->exe);
+    free (path);
     return 0;
 }
 

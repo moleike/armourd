@@ -36,14 +36,13 @@
 #include "armour.h"
 #include "armour_proc.h"
 
-
-static int _armour_proc_open (long pid, char *filename)
+static int _armour_proc_open (pid_t pid, const char *filename)
 {
     char *filepath = NULL;
     int fd;
 
     if (-1 == asprintf (&filepath,
-            "/proc/%ld/%s", pid, filename)) {
+            "/proc/%ld/%s", (long)pid, filename)) {
         return -1;
     }
 
@@ -53,7 +52,7 @@ static int _armour_proc_open (long pid, char *filename)
     return fd;
 }
 
-char *armour_proc_readlink (long pid, char *filename)
+char *armour_proc_readlink (pid_t pid, const char *filename)
 {
     char *filepath = NULL, *buf = NULL;
     long len;
@@ -67,7 +66,7 @@ char *armour_proc_readlink (long pid, char *filename)
     if (!buf)
         return NULL;
 
-    ret = asprintf (&filepath, "/proc/%ld/%s", pid, filename);
+    ret = asprintf (&filepath, "/proc/%ld/%s", (long)pid, filename);
     if (ret == -1) {
         free (buf);
         return NULL;
@@ -89,7 +88,7 @@ char *armour_proc_readlink (long pid, char *filename)
  * returns a malloc()'d buffer with the file contents.
  */
 #define CHUNK_SIZE (1 << 6)
-char *armour_proc_read (long pid, char *filename)
+char *armour_proc_read (pid_t pid, const char *filename)
 {
     char *buf, *p, *q;
     ssize_t count, size, len, cc;
@@ -134,14 +133,14 @@ char *armour_proc_read (long pid, char *filename)
     return buf;
 } 
 
-//int armour_proc_set_param_exe (armour_proc *p, void *data)
-//{
-//    (void)data;
-//    p->exe = armour_proc_readlink (p->pid, "exe");
-//    if (!p->exe) 
-//        return -1;
-//    return 0;
-//}
+int armour_proc_set_param_exe (armour_proc *p, void *data)
+{
+    (void)data;
+    p->exe = armour_proc_readlink (p->pid, "exe");
+    if (!p->exe) 
+        return -1;
+    return 0;
+}
 
 int armour_proc_set_param_cwd (armour_proc *p, void *data)
 {
@@ -250,6 +249,24 @@ int armour_proc_set_param_comm (armour_proc *p, void *data)
     return ret;
 }
 
+pid_t armour_proc_getppid (pid_t pid, void *data)
+{
+    FILE *fp = NULL;
+    (void)data;
+    pid_t ppid;
+
+    fp = fdopen (_armour_proc_open (pid, "stat"), "r");
+    if (!fp)
+        return -1;
+
+    if (1 > fscanf (fp, "%*d %*s %*c %d", &ppid)) {
+        ppid = -1;
+    }
+
+    fclose (fp);
+    return ppid;
+}
+
 int armour_proc_set_param_io (armour_proc *p, void *data)
 {
     (void)data;
@@ -295,7 +312,7 @@ int armour_proc_set_param_ugid (armour_proc *p, void *data)
  * the list of groups the user is in. 
  * use setgroups(2) and get Groups entry from /proc<pid>/status.
  */
-int armour_proc_set_param (armour_proc *p, long pid)
+int armour_proc_set_param (armour_proc *p, pid_t pid)
 {
     p->pid = pid;
     errno = 0;
@@ -351,13 +368,14 @@ void armour_proc_free_param (armour_proc *p)
     free (p->file[2]);
     //free (p->options); // TODO
 
+    p->flags = 0;
     /* it masks errors such double free's, 
      * so eventually should be removed */
     memset ((char*)p + offsetof (armour_proc, pid), 
             0, sizeof (struct proc_attr));
 }
 
-armour_proc *armour_proc_new (char *filename, armour_options *op)
+armour_proc *armour_proc_new (const char *filename, armour_options *op)
 {
     armour_proc *newp;
 
@@ -377,6 +395,16 @@ armour_proc *armour_proc_new (char *filename, armour_options *op)
         newp->options = *op;
     
     return newp;
+}
+
+armour_proc *armour_proc_new2 (pid_t pid, armour_options *op)
+{
+    char *path = NULL; 
+
+    path = armour_proc_readlink (pid, "exe");
+    if (!path)
+        return NULL;
+    return armour_proc_new (path, op);
 }
 
 int armour_proc_delete (armour_proc *p, void *data)
@@ -476,8 +504,6 @@ int armour_proc_recover (armour_proc *proc, void *data)
             _exit (127); /* exec error! */
 
         default:
-            proc->flags &= ~ARPROC_WATCHED;
-            armour_proc_free_param (proc);
             break;
     }
     return 0;

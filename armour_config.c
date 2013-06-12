@@ -116,6 +116,7 @@ int armour_config_read (armour_t *self, const char *filepath)
 
     while (str - fstart < flen) {
         char *start, *filepath = NULL, *linkname = NULL;
+        // TODO so far we discard the options
         armour_options options = { 0 };
 
         switch (state) {
@@ -154,7 +155,7 @@ int armour_config_read (armour_t *self, const char *filepath)
                             while (cc--) {
                                 char *file = NULL;
                                 if (check_file (gl.gl_pathv[cc], &file) == 0) {
-                                        armour_add_proc (self, armour_proc_new (file? file: gl.gl_pathv[cc], NULL));
+                                        armour_add_new (self, file? file: gl.gl_pathv[cc]);
                                         free (file);
                                 }
                             }
@@ -229,7 +230,7 @@ int armour_config_read (armour_t *self, const char *filepath)
                             free (filepath);
                             filepath = linkname;
                         }
-                        armour_add_proc (self, armour_proc_new (filepath, &options));
+                        armour_add_new (self, filepath);
                         free (filepath);
                         state = DEFAULT;
                     }

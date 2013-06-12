@@ -74,14 +74,16 @@ struct armour_proc
 #define ARPROC_SCRIPT       (1 << 2)    /**< has a recover shell script */
 #define ARPROC_PIDFILE      (1 << 3)    /**< has a pidfile */
 #define ARPROC_VERBOSE      (1 << 4)    /**< be verbose when recovering */
+#define ARPROC_RUNNING      (1 << 5)    
+#define ARPROC_RECOVERING   (1 << 6)    
 
 typedef struct  armour_proc                     armour_proc;
 typedef struct  armour_options                  armour_options;
 typedef int     armour_proc_func                (armour_proc *, void *);
 
-armour_proc    *armour_proc_new                 (char *filename, armour_options *op);
+armour_proc    *armour_proc_new                 (const char *filename, armour_options *op);
 int             armour_proc_delete              (armour_proc *p, void *data);
-int             armour_proc_set_param           (armour_proc *p, long pid);
+int             armour_proc_set_param           (armour_proc *p, pid_t pid);
 void            armour_proc_free_param          (armour_proc *p);
 int             armour_proc_set_param_environ   (armour_proc *p, void *data);
 int             armour_proc_set_param_cmdline   (armour_proc *p, void *data);
@@ -91,7 +93,8 @@ int             armour_proc_set_param_cwd       (armour_proc *p, void *data);
 int             armour_proc_set_param_root      (armour_proc *p, void *data);
 int             armour_proc_dump                (armour_proc *p, void *data);
 int             armour_proc_recover             (armour_proc *p, void *data);
-char           *armour_proc_readlink            (long pid, char *filename);
-char           *armour_proc_read                (long pid, char *filename);
+char           *armour_proc_readlink            (pid_t pid, const char *filename);
+char           *armour_proc_read                (pid_t pid, const char *filename);
+pid_t           armour_proc_getppid             (pid_t pid, void *data);
 
 #endif //_ARMOUR_PROC_H

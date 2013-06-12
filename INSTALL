@@ -1,0 +1,24 @@
+Download armourd sources from the git repository:
+
+$ git clone git://github.com/amorenoc/armourd
+
+The project uses the GNU build process. The compile output should go into a
+separate directory, so to e.g. maintain separate debug and release versions.
+
+ $ ./autogen.sh
+ $ mkdir debug
+ $ cd debug
+ $ ../configure CPPFLAGS=-DDEBUG CFLAGS='-O0 -g'
+ $ make
+ $ make install
+
+ armourd has an optional DBus interface that will be enabled if the required
+ libraries are found, so-called automatic dependencies. To build the project
+ without DBus support at all:
+
+ $ ./autogen.sh
+ $ mkdir nodbus
+ $ cd nodbus
+ $ ../configure --without-dbus
+ $ make
+ $ make install
