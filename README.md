@@ -6,28 +6,32 @@ embedded systems running GNU/Linux.
 
 armourd tracks the creation and termination of processes. When a 'watched'
 service crashes, armourd will automatically restart it.  To watch a service,
-armourd only needs the file path of the application executable; no PID files, no
-scripts.
+armourd only needs the file path of the application executable; no PID files,
+no scripts.
  
 It works out of the box, as it takes roughly a couple of minutes to set it up.
 Upon startup armourd interprets its configuration file `/etc/armourd.conf`,
 which lists the pathnames of the services that need to be watched.
 
 armourd recovers processes that stopped abnormally, by returning a nonzero exit
-code; it does not recover applications hanging.  Forking servers will have their
-children terminate before restart.
+code; it does not recover applications hanging.  Forking servers will have
+their children terminate before restart.
 
 armourd is Linux-only by design, because it relies upon interfaces such as
 `epoll(7)` and `netlink(7)`, and most notably the the use of the `Proc
-Connector`. It also makes extensive use of `proc(5)` files that aren't available
-in other unices.
+Connector`. It also makes extensive use of `proc(5)` files that aren't
+available in other unices.
 
 armourd is best suited for systems using sysvinit, as newer init systems, such
 as upstart or systemd, service recovery is readily available.
 
 Although armourd is designed to recover system daemon programs, it can actually
 recover any application, with the limitation that currently only supports
-single-instance applications.
+single-instance applications unless using the DBus interface (see below).
+
+armourd can be optionally built with DBus support to commuincate with other
+applications. The Dbus API exposes runtime information, and a method to watch
+running services (processes). 
 
 Goals
 -----
@@ -56,9 +60,9 @@ Testsuite
 ---------
 
 Current version is not production ready, as there aren't any tests.  Unit tests
-to exercise the API's and integration tests to check the runtime behaviour are a
-must.  This could be added as a configure option (e.g. --enable-tests) then the
-user can run the make *check* target
+to exercise the API's and integration tests to check the runtime behaviour are
+a must.  This could be added as a configure option (e.g. --enable-tests) then
+the user can run the make *check* target
 
 Notes
 -----
@@ -66,10 +70,9 @@ Notes
 armourd just does individual service recovery; it does not perform system
 recovery, i.e. talk to watchdog hardware.  In order to make your system fully
 reliable, you should have a process feeding a watchdog, although your mileage
-may vary.
-Linux provides a very simple interface to watchdog timers (`/dev/watchdog`) that
-armourd will implement as a non-default feature, to provide an all-round
-solution.
+may vary.  Linux provides a very simple interface to watchdog timers
+(`/dev/watchdog`) that armourd will implement as a non-default feature, to
+provide an all-round solution.
 
 TODO
 ----
