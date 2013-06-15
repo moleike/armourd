@@ -38,40 +38,39 @@ static int daemon_mode = 0;
 #ifdef SYSCONFDIR
 static char *config_file = SYSCONFDIR "/armourd.conf";
 #else
-//static char *config_file = "/etc/armourd.conf";
-static char *config_file = "armourd.conf";
+static char *config_file = "/etc/armourd.conf";
 #endif
 
-//static int running (void)
-//{
-//    int fd;
-//    struct flock fl;
-//    char buf[16];
-//
-//    if ((fd = open ("/var/run/armourd.pid"
-//        , O_RDWR | O_CREAT, 0644)) < 0) {
-//	    err (EXIT_FAILURE, "open");
-//    }
-//
-//    fl = (struct flock) { .l_type = F_WRLCK, .l_whence = SEEK_SET };
-//    
-//    if (fcntl (fd, F_SETLK, &fl) < 0) {
-//        if (EACCES == errno || EAGAIN == errno) {
-//            close (fd);
-//            return 1;
-//        }
-//	    err (EXIT_FAILURE, "fcntl");
-//    }
-//
-//    fcntl (fd, F_SETFD, FD_CLOEXEC);
-//
-//    ftruncate (fd, 0);
-//    sprintf (buf, "%ld", (long)getpid());
-//    write (fd, buf, strlen (buf) + 1);
-//
-//    /* keep it open to hold the lock */
-//    return 0;
-//}
+static int running (void)
+{
+    int fd;
+    struct flock fl;
+    char buf[16];
+
+    if ((fd = open ("/var/run/armourd.pid"
+        , O_RDWR | O_CREAT, 0644)) < 0) {
+	    err (EXIT_FAILURE, "open");
+    }
+
+    fl = (struct flock) { .l_type = F_WRLCK, .l_whence = SEEK_SET };
+    
+    if (fcntl (fd, F_SETLK, &fl) < 0) {
+        if (EACCES == errno || EAGAIN == errno) {
+            close (fd);
+            return 1;
+        }
+	    err (EXIT_FAILURE, "fcntl");
+    }
+
+    fcntl (fd, F_SETFD, FD_CLOEXEC);
+
+    ftruncate (fd, 0);
+    sprintf (buf, "%ld", (long)getpid());
+    write (fd, buf, strlen (buf) + 1);
+
+    /* keep it open to hold the lock */
+    return 0;
+}
 
 static void usage (void)
 {
@@ -135,9 +134,10 @@ int main (int argc, char **argv)
     && (daemon (0, 1) < 0)) {
         err (EXIT_FAILURE, "daemon()");
     }
-    //if (running ()) {
-    //    errx (EXIT_FAILURE, "already running");
-    //}
+
+    if (running ()) {
+        errx (EXIT_FAILURE, "already running");
+    }
 
     if (armour_init (&self, config_file) < 0) {
         errx (EXIT_FAILURE, "failed to start");
