@@ -4,34 +4,31 @@ armourd
 armourd is a Linux daemon for service recovery and is targeted for use in
 embedded systems running GNU/Linux.
 
-armourd tracks the creation and termination of processes. When a 'watched'
-service crashes, armourd will automatically restart it.  To watch a service,
-armourd only needs the file path of the application executable; no PID files,
-no scripts.
- 
+When a watched application crashes, armourd will automatically restart it. To
+watch an application armourd only needs the file path of the application
+executable; no PID files, no shell scripts. This is achieved by jointly
+tracking the creation/termination of processes and collecting process
+information.
+
 It works out of the box, as it takes roughly a couple of minutes to set it up.
 Upon startup armourd interprets its configuration file `/etc/armourd.conf`,
 which lists the pathnames of the services that need to be watched.
 
 armourd recovers processes that stopped abnormally, by returning a nonzero exit
-code; it does not recover applications hanging.  Forking servers will have
-their children terminate before restart.
+code; it does not recover applications hanging. Forking servers will have their
+children terminate before restart. Although it is designed to recover system
+daemon programs, it can actually recover any application, with the limitation
+that currently only supports single-instance applications unless using the DBus
+interface (see below).
 
 armourd is Linux-only by design, because it relies upon interfaces such as
-`epoll(7)` and `netlink(7)`, and most notably the the use of the `Proc
-Connector`. It also makes extensive use of `proc(5)` files that aren't
-available in other unices.
+epoll(7) or netlink(7) and proc(5) files that aren't available in other unices.
+It is more suited to sysvinit-based systems; newer init systems, such as
+upstart or systemd, service recovery is readily available.
 
-armourd is best suited for systems using sysvinit, as newer init systems, such
-as upstart or systemd, service recovery is readily available.
-
-Although armourd is designed to recover system daemon programs, it can actually
-recover any application, with the limitation that currently only supports
-single-instance applications unless using the DBus interface (see below).
-
-armourd can be optionally built with DBus support to commuincate with other
-applications. The Dbus API exposes runtime information, and a method to watch
-running services (processes). 
+Optionally, you can build the daemon with DBus support to commuincate with
+other applications. The DBus API exposes runtime information, and a method to
+watch running processes.
 
 Goals
 -----
@@ -55,6 +52,21 @@ binaries under /usr/local/bin/:
 
         $ echo '/usr/local/bin/*' > /etc/armourd.conf
 
+Additionally, you may explicitly request to watch a running process, using
+DBus, e.g. with `dbus-send` you would:
+
+        $ dbus-send --session --print-reply --type=method_call \
+        > --dest=com.github.Armourd /com/github/armourd \
+        > com.github.Armourd.WatchProcess int32:`pidof foo`
+
+Or, using the provided example Python script:
+
+        $ ./client-example.py -w`pidof foo`
+
+
+DBus interface
+--------------
+TODO
 
 Testsuite
 ---------
@@ -80,5 +92,6 @@ TODO
 * Testsuite
 * Logging
 * Configuration file parser needs to be rewritten (it is buggy)
-* Enable options in the configuration file to tailor specific needs
+* Enable options in the configuration file and DBus interface to tailor
+  specific needs, e.g. return codes for success or a recover script
 * watchdog capabilities

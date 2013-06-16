@@ -4,10 +4,10 @@ import sys, dbus, getopt
 
 armour_dbus_name = 'com.github.Armourd'
 armour_object_path = '/com/github/armourd'
-watch_ret = {0 : 'Success', 1 : 'Already watching', 2 : 'No Memory' }
+watch_ret = {0 : 'Success', 1 : 'Already watching', 2 : 'No Memory'}
 
 def usage():
-    print sys.argv[0], "[--introspect | --watch=PID | --list]"
+    print "Usage:", sys.argv[0], "[--introspect | --watch=PID | --list]"
 
 def main(argv):                         
     global armour_dbus_name, armour_object_path
@@ -15,7 +15,7 @@ def main(argv):
     bus = dbus.SessionBus()
 
     try:                                
-        opts, args = getopt.getopt(argv, "hiw:l", ["help", "introspect" "watch=", "list"])
+        opts, args = getopt.getopt(argv, "hiw:l", ["help", "introspect", "watch=", "list"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)     
