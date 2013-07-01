@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Armourd : a Linux daemon for service recovery" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Armourd</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/amorenoc/armourd">View on GitHub</a>
+
+          <h1 id="project_title">Armourd</h1>
+          <h2 id="project_tagline">a Linux daemon for service recovery</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/amorenoc/armourd/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/amorenoc/armourd/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="armourd" class="anchor" href="#armourd"><span class="octicon octicon-link"></span></a>armourd</h1>
+
+<p>armourd is a Linux daemon for service recovery and is targeted for use in
+embedded systems running GNU/Linux.</p>
+
+<p>When a watched application crashes, armourd will automatically restart it. To
+watch an application armourd only needs the file path of the application
+executable; no PID files, no shell scripts. This is achieved by jointly
+tracking the creation/termination of processes and collecting process
+information.</p>
+
+<p>It works out of the box, as it takes roughly a couple of minutes to set it up.
+Upon startup armourd interprets its configuration file which lists the 
+pathnames of the services that need to be watched.</p>
+
+<p>armourd recovers processes that stopped abnormally, by returning a nonzero exit
+code; it does not recover applications hanging. Forking servers will have their
+children terminate before restart. Although it is designed to recover system
+daemon programs, it can actually recover any application, with the limitation
+that currently only supports single-instance applications unless using the DBus
+interface (see below).</p>
+
+<p>armourd is Linux-only by design, because it relies upon interfaces such as
+epoll(7) or netlink(7) and proc(5) files that aren't available in other unices.
+It is more suited to sysvinit-based systems; newer init systems, such as
+upstart or systemd, service recovery is readily available.</p>
+
+<p>Optionally, you can build the daemon with 
+<a href="http://www.freedesktop.org/wiki/Software/dbus/">DBus</a> support to commuincate 
+with other applications. The DBus API exposes runtime information, and a method
+to watch running processes.</p>
+
+<h2>
+<a name="goals" class="anchor" href="#goals"><span class="octicon octicon-link"></span></a>Goals</h2>
+
+<ul>
+<li>simplest possible configuration</li>
+<li>no library dependencies (other than the C library)</li>
+<li>small memory footprint</li>
+<li>fast recovery of processes</li>
+</ul><h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>Populate the config file with the (absolute) pathnames of your applications,
+e.g.:</p>
+
+<pre><code>    $ echo '/opt/foo' &gt; /etc/armourd.conf
+</code></pre>
+
+<p>You can also use file-name globs ('*' wildcard). For example, to add all the
+binaries under /usr/local/bin/:</p>
+
+<pre><code>    $ echo '/usr/local/bin/*' &gt; /etc/armourd.conf
+</code></pre>
+
+<p>Additionally, you may explicitly request to watch a running process, using
+DBus, e.g. with <code>dbus-send</code> you would:</p>
+
+<pre><code>    $ dbus-send --session --print-reply --type=method_call \
+    &gt; --dest=com.github.Armourd /com/github/armourd \
+    &gt; com.github.Armourd.WatchProcess int32:`pidof foo`
+</code></pre>
+
+<p>Or, using the provided example Python script:</p>
+
+<pre><code>    $ ./client-example.py -w`pidof foo`
+</code></pre>
+
+<h2>
+<a name="dbus-interface" class="anchor" href="#dbus-interface"><span class="octicon octicon-link"></span></a>DBus interface</h2>
+
+<p>TODO</p>
+
+<h2>
+<a name="testsuite" class="anchor" href="#testsuite"><span class="octicon octicon-link"></span></a>Testsuite</h2>
+
+<p>Current version is not production ready, as there aren't any tests.  Unit tests
+to exercise the API's and integration tests to check the runtime behaviour are
+a must.  This could be added as a configure option (e.g. --enable-tests) then
+the user can run the make <em>check</em> target</p>
+
+<h2>
+<a name="notes" class="anchor" href="#notes"><span class="octicon octicon-link"></span></a>Notes</h2>
+
+<p>armourd just does individual service recovery; it does not perform system
+recovery, i.e. talk to watchdog hardware.  In order to make your system fully
+reliable, you should have a process feeding a watchdog, although your mileage
+may vary.  Linux provides a very simple interface to watchdog timers
+(<code>/dev/watchdog</code>) that armourd will implement as a non-default feature, to
+provide an all-round solution.</p>
+
+<h2>
+<a name="todo" class="anchor" href="#todo"><span class="octicon octicon-link"></span></a>TODO</h2>
+
+<ul>
+<li>Testsuite</li>
+<li>Logging</li>
+<li>Configuration file parser needs to be rewritten (it is buggy)</li>
+<li>Enable options in the configuration file and DBus interface to tailor
+specific needs, e.g. return codes for success or a recover script</li>
+<li>watchdog capabilities</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Armourd maintained by <a href="https://github.com/amorenoc">amorenoc</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
