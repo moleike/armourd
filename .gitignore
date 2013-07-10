@@ -1,0 +1,25 @@
+# git ls-files --other --exclude-standard
+
+# Object files
+*.o
+
+# Autotools generated files
+config.h.in
+config.h
+configure
+Makefile
+Makefile.in
+missing
+depcomp
+install-sh
+config.status
+config.log
+aclocal.m4
+autom4te.cache/*
+autom4te.cache
+armourd.conf.in
+armourd.conf
+stamp-h1
+.deps
+
+armourd
