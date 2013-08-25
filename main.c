@@ -147,5 +147,9 @@ int main (int argc, char **argv)
         warn ("dbus interface init failed");
     }
 
+	if (armour_watchdog_init (&self->watchdog) < 0) {
+		warn ("watchdog interface init failed");
+	}
+
     return armour_run (self);
 }

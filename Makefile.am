@@ -3,6 +3,7 @@ armourd_SOURCES = 		\
 	armour.c 			\
 	armour_proc.c 		\
 	armour_config.c 	\
+	armour_watchdog.c	\
 	main.c
 
 if DBUS

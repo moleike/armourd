@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <stddef.h>
 
+#include "armour_watchdog.h"
 #include "armour_proc.h"
 #include "events.h"
 
@@ -31,7 +32,8 @@ struct armour
 {
     int epollfd;                /**< main loop */
     int running;                /**< break main loop */
-    armour_evdata signal, sock; /**< handlers for signals and netlink datagrams */
+	armour_watchdog watchdog;	/**< handler for watchdog interface */
+	armour_evdata signal, sock; /**< handlers for signals and netlink datagrams */
     armour_proc *head;          /**< list of processes that are watched */
 };
 
