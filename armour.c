@@ -43,6 +43,7 @@
 
 #include "debug.h"
 #include "armour_proc.h"
+#include "armour_watchdog.h"
 #include "armour.h"
 #include "list.h"
 
@@ -309,15 +310,19 @@ static int armour_add_nlsock (armour_t *self)
 int armour_run (armour_t *self)
 {
     struct epoll_event events[10];
-    int i, nfds;
+	int i, nfds;
+	armour_watchdog *wd;
 
     if (armour_listen (self) < 0)
         return 1;
 
-    self->running = 1;
+	wd = &self->watchdog;
 
+    self->running = 1;
     while (self->running) {
-        nfds = epoll_wait (self->epollfd, events, sizeof events, -1);
+		armour_watchdog_ping (wd);
+		
+        nfds = epoll_wait (self->epollfd, events, sizeof events, wd->keepalive * 1000);
 
         if (nfds < 0) {
             if (EINTR == errno)
