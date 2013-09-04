@@ -24,9 +24,9 @@
 #include <sys/types.h>
 #include <stddef.h>
 
-#include "armour_watchdog.h"
 #include "armour_proc.h"
 #include "events.h"
+#include "watchdog.h"
 
 struct armour 
 {

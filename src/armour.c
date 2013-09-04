@@ -43,7 +43,7 @@
 
 #include "debug.h"
 #include "armour_proc.h"
-#include "armour_watchdog.h"
+#include "watchdog.h"
 #include "armour.h"
 #include "list.h"
 

@@ -24,14 +24,14 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <linux/watchdog.h>
-#include "armour_watchdog.h"
+#include "watchdog.h"
 
-void armour_watchdog_ping(armour_watchdog *wd)
+void armour_watchdog_ping (armour_watchdog *wd)
 {
 	ioctl (wd->fd, WDIOC_KEEPALIVE, 0);
 }
 
-int armour_watchdog_init(armour_watchdog *wd)
+int armour_watchdog_init (armour_watchdog *wd)
 {
 	struct watchdog_info ident;
 	char stop = 'V';

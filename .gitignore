@@ -21,5 +21,6 @@ armourd.conf.in
 armourd.conf
 stamp-h1
 .deps
+.dirstamp
 
 armourd
