@@ -22,13 +22,16 @@ that currently only supports single-instance applications unless using the DBus
 interface (see below).
 
 armourd is Linux-only by design, because it relies upon interfaces such as
-epoll(7) or netlink(7) and proc(5) files that aren't available in other unices.
+[epoll(7)](http://man7.org/linux/man-pages/man7/epoll.7.html) or [netlink(7)](http://man7.org/linux/man-pages/man7/netlink.7.html) 
+and [proc(5)](http://man7.org/linux/man-pages/man5/proc.5.html) 
+files that aren't available in other unices.
 It is more suited to sysvinit-based systems; newer init systems, such as
-upstart or systemd, service recovery is readily available.
+[upstart](http://upstart.ubuntu.com/) or [systemd](http://www.freedesktop.org/wiki/Software/systemd/), 
+service recovery is readily available.
 
 Optionally, you can build the daemon with DBus support to commuincate with
-other applications. The DBus API exposes runtime information, and a method to
-watch running processes.
+other applications. The [D-Bus](http://dbus.freedesktop.org/) API exposes runtime 
+information, and a method to watch running processes.
 
 Goals
 -----
