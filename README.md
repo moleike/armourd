@@ -29,10 +29,6 @@ It is more suited to sysvinit-based systems; newer init systems, such as
 [upstart](http://upstart.ubuntu.com/) or [systemd](http://www.freedesktop.org/wiki/Software/systemd/), 
 service recovery is readily available.
 
-Optionally, you can build the daemon with DBus support to commuincate with
-other applications. The [D-Bus](http://dbus.freedesktop.org/) API exposes runtime 
-information, and a method to watch running processes.
-
 Goals
 -----
 
@@ -67,9 +63,32 @@ Or, using the provided example Python script:
         $ ./client-example.py -w`pidof foo`
 
 
-DBus interface
+D-Bus Interface
 --------------
-TODO
+
+Optionally, you can build the daemon with [D-Bus](http://dbus.freedesktop.org/) 
+support to commuincate with other applications. The D-Bus API exposes runtime 
+information, and a method to watch running processes. The introspection XML data is:
+```xml
+<node>
+<interface name="org.freedesktop.DBus.Introspectable">
+<method name="Introspect">
+<arg name="xml_data" type="s" direction="out"/>
+</method>
+</interface>
+<interface name="com.github.Armourd">
+<method name="ListProcesses">
+<arg type="a{sv}" direction="out"/>
+</method>
+<method name="WatchProcess">
+<arg name="pid" type="i" direction="in"/>
+<arg name="resultcode" type="u" direction="out"/>
+</method>
+</interface>
+</node>
+```
+
+
 
 Testsuite
 ---------
