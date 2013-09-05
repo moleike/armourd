@@ -1,36 +1,33 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
   <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="Armourd : a Linux daemon for service recovery" />
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Armourd by amorenoc</title>
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
-
-    <title>Armourd</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
   </head>
-
   <body>
+    <div class="wrapper">
+      <header>
+        <h1>Armourd</h1>
+        <p>a Linux daemon for service recovery</p>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/amorenoc/armourd">View on GitHub</a>
+        <p class="view"><a href="https://github.com/amorenoc/armourd">View the Project on GitHub <small>amorenoc/armourd</small></a></p>
 
-          <h1 id="project_title">Armourd</h1>
-          <h2 id="project_tagline">a Linux daemon for service recovery</h2>
 
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/amorenoc/armourd/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/amorenoc/armourd/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
+        <ul>
+          <li><a href="https://github.com/amorenoc/armourd/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/amorenoc/armourd/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/amorenoc/armourd">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
         <h1>
 <a name="armourd" class="anchor" href="#armourd"><span class="octicon octicon-link"></span></a>armourd</h1>
 
@@ -44,25 +41,23 @@ tracking the creation/termination of processes and collecting process
 information.</p>
 
 <p>It works out of the box, as it takes roughly a couple of minutes to set it up.
-Upon startup armourd interprets its configuration file which lists the 
-pathnames of the services that need to be watched.</p>
+Upon startup armourd interprets its configuration file <code>/etc/armourd.conf</code>,
+which lists the pathnames of the services that need to be watched.</p>
 
 <p>armourd recovers processes that stopped abnormally, by returning a nonzero exit
 code; it does not recover applications hanging. Forking servers will have their
 children terminate before restart. Although it is designed to recover system
 daemon programs, it can actually recover any application, with the limitation
-that currently only supports single-instance applications unless using the DBus
-interface (see below).</p>
+that currently only supports single-instance applications unless using the
+<a href="http://dbus.freedesktop.org/">D-Bus</a> interface (see below).</p>
 
 <p>armourd is Linux-only by design, because it relies upon interfaces such as
-epoll(7) or netlink(7) and proc(5) files that aren't available in other unices.
+<a href="http://man7.org/linux/man-pages/man7/epoll.7.html">epoll(7)</a> or <a href="http://man7.org/linux/man-pages/man7/netlink.7.html">netlink(7)</a> 
+and <a href="http://man7.org/linux/man-pages/man5/proc.5.html">proc(5)</a> 
+files that aren't available in other unices.
 It is more suited to sysvinit-based systems; newer init systems, such as
-upstart or systemd, service recovery is readily available.</p>
-
-<p>Optionally, you can build the daemon with 
-<a href="http://www.freedesktop.org/wiki/Software/dbus/">DBus</a> support to commuincate 
-with other applications. The DBus API exposes runtime information, and a method
-to watch running processes.</p>
+<a href="http://upstart.ubuntu.com/">upstart</a> or <a href="http://www.freedesktop.org/wiki/Software/systemd/">systemd</a>, 
+service recovery is readily available.</p>
 
 <h2>
 <a name="goals" class="anchor" href="#goals"><span class="octicon octicon-link"></span></a>Goals</h2>
@@ -78,32 +73,63 @@ to watch running processes.</p>
 <p>Populate the config file with the (absolute) pathnames of your applications,
 e.g.:</p>
 
-<pre><code>    $ echo '/opt/foo' &gt; /etc/armourd.conf
-</code></pre>
+<div class="highlight"><pre><span class="nv">$ </span><span class="nb">echo</span> <span class="s1">'/opt/foo'</span> &gt; /etc/armourd.conf
+<span class="nv">$ </span><span class="nb">echo</span> <span class="s1">'/opt/bar'</span> &gt;&gt; /etc/armourd.conf
+</pre></div>
 
 <p>You can also use file-name globs ('*' wildcard). For example, to add all the
 binaries under /usr/local/bin/:</p>
 
-<pre><code>    $ echo '/usr/local/bin/*' &gt; /etc/armourd.conf
-</code></pre>
+<div class="highlight"><pre><span class="nv">$ </span><span class="nb">echo</span> <span class="s1">'/usr/local/bin/*'</span> &gt; /etc/armourd.conf
+</pre></div>
 
 <p>Additionally, you may explicitly request to watch a running process, using
 DBus, e.g. with <code>dbus-send</code> you would:</p>
 
-<pre><code>    $ dbus-send --session --print-reply --type=method_call \
-    &gt; --dest=com.github.Armourd /com/github/armourd \
-    &gt; com.github.Armourd.WatchProcess int32:`pidof foo`
-</code></pre>
+<div class="highlight"><pre><span class="nv">$ </span>dbus-send --session --print-reply --type<span class="o">=</span>method_call <span class="se">\</span>
+&gt; --dest<span class="o">=</span>com.github.Armourd /com/github/armourd <span class="se">\</span>
+&gt; com.github.Armourd.WatchProcess int32:<span class="sb">`</span>pidof foo<span class="sb">`</span>
+</pre></div>
 
-<p>Or, using the provided example Python script:</p>
+<p>Or, using the <a href="src/dbus/client-example.py">example</a> Python script:</p>
 
-<pre><code>    $ ./client-example.py -w`pidof foo`
-</code></pre>
+<div class="highlight"><pre><span class="nv">$ </span>./client-example.py -w<span class="sb">`</span>pidof foo<span class="sb">`</span>
+</pre></div>
 
 <h2>
-<a name="dbus-interface" class="anchor" href="#dbus-interface"><span class="octicon octicon-link"></span></a>DBus interface</h2>
+<a name="system-recovery" class="anchor" href="#system-recovery"><span class="octicon octicon-link"></span></a>System Recovery</h2>
 
-<p>TODO</p>
+<p>armourd just does individual service recovery; it does not perform system
+recovery, i.e. talk to watchdog hardware.  In order to make your system fully
+reliable, you should have a process feeding a watchdog, although your mileage
+may vary.  Linux provides a very simple interface to watchdog timers
+(<code>/dev/watchdog</code>) that armourd will implement as a non-default feature, to
+provide an all-round solution.</p>
+
+<h2>
+<a name="d-bus-interface" class="anchor" href="#d-bus-interface"><span class="octicon octicon-link"></span></a>D-Bus Interface</h2>
+
+<p>Optionally, you can build the daemon with D-Bus support to commuincate with other 
+applications. The D-Bus API exposes runtime information, and a method to watch 
+running processes. The introspection XML data is:</p>
+
+<div class="highlight"><pre><span class="nt">&lt;node&gt;</span>
+  <span class="nt">&lt;interface</span> <span class="na">name=</span><span class="s">"org.freedesktop.DBus.Introspectable"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;method</span> <span class="na">name=</span><span class="s">"Introspect"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;arg</span> <span class="na">name=</span><span class="s">"xml_data"</span> <span class="na">type=</span><span class="s">"s"</span> <span class="na">direction=</span><span class="s">"out"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/method&gt;</span>
+  <span class="nt">&lt;/interface&gt;</span>
+  <span class="nt">&lt;interface</span> <span class="na">name=</span><span class="s">"com.github.Armourd"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;method</span> <span class="na">name=</span><span class="s">"ListProcesses"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;arg</span> <span class="na">type=</span><span class="s">"a{sv}"</span> <span class="na">direction=</span><span class="s">"out"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/method&gt;</span>
+    <span class="nt">&lt;method</span> <span class="na">name=</span><span class="s">"WatchProcess"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;arg</span> <span class="na">name=</span><span class="s">"pid"</span> <span class="na">type=</span><span class="s">"i"</span> <span class="na">direction=</span><span class="s">"in"</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;arg</span> <span class="na">name=</span><span class="s">"resultcode"</span> <span class="na">type=</span><span class="s">"u"</span> <span class="na">direction=</span><span class="s">"out"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/method&gt;</span>
+  <span class="nt">&lt;/interface&gt;</span>
+<span class="nt">&lt;/node&gt;</span>
+</pre></div>
 
 <h2>
 <a name="testsuite" class="anchor" href="#testsuite"><span class="octicon octicon-link"></span></a>Testsuite</h2>
@@ -112,16 +138,6 @@ DBus, e.g. with <code>dbus-send</code> you would:</p>
 to exercise the API's and integration tests to check the runtime behaviour are
 a must.  This could be added as a configure option (e.g. --enable-tests) then
 the user can run the make <em>check</em> target</p>
-
-<h2>
-<a name="notes" class="anchor" href="#notes"><span class="octicon octicon-link"></span></a>Notes</h2>
-
-<p>armourd just does individual service recovery; it does not perform system
-recovery, i.e. talk to watchdog hardware.  In order to make your system fully
-reliable, you should have a process feeding a watchdog, although your mileage
-may vary.  Linux provides a very simple interface to watchdog timers
-(<code>/dev/watchdog</code>) that armourd will implement as a non-default feature, to
-provide an all-round solution.</p>
 
 <h2>
 <a name="todo" class="anchor" href="#todo"><span class="octicon octicon-link"></span></a>TODO</h2>
@@ -135,17 +151,12 @@ specific needs, e.g. return codes for success or a recover script</li>
 <li>watchdog capabilities</li>
 </ul>
       </section>
-    </div>
-
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Armourd maintained by <a href="https://github.com/amorenoc">amorenoc</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/amorenoc">amorenoc</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
       </footer>
     </div>
-
+    <script src="javascripts/scale.fix.js"></script>
     
-
   </body>
 </html>
