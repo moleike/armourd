@@ -31,6 +31,8 @@ daemon programs, it can actually recover any application, with the limitation
 that currently only supports single-instance applications unless using the
 [D-Bus](http://dbus.freedesktop.org/) interface (see below).
 
+See [INSTALL](INSTALL) for details on how to build and run.
+
 
 Goals
 -----
