@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <stddef.h>
 
-#include "armour_proc.h"
+#include "proc.h"
 #include "events.h"
 #include "watchdog.h"
 

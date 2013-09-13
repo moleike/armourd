@@ -34,7 +34,7 @@
 
 #include "debug.h"
 #include "armour.h"
-#include "armour_proc.h"
+#include "proc.h"
 
 static int _armour_proc_open (pid_t pid, const char *filename)
 {

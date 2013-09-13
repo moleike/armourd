@@ -1,10 +1,10 @@
 bin_PROGRAMS = armourd
-armourd_SOURCES = 			\
-	src/armour.c 			\
-	src/armour_proc.c 		\
-	src/armour_config.c 	\
-	src/watchdog.c			\
-	src/log.c				\
+armourd_SOURCES = 	\
+	src/armour.c 	\
+	src/proc.c 		\
+	src/config.c 	\
+	src/watchdog.c	\
+	src/log.c		\
 	src/main.c
 
 if DBUS

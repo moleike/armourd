@@ -38,7 +38,7 @@
 #include <stdbool.h>
 
 #include "armour.h"
-#include "armour_proc.h"
+#include "proc.h"
 
 // if is a symlink returns the contents in linkname
 static int check_file (const char *filepath, char **linkname)

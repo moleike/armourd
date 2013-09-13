@@ -1,5 +1,5 @@
 /* vim: set sw=4 ts=4 et : */
-/* armour_proc.h: proc(5) functions
+/* proc.h: proc(5) functions
  *
  * Copyright (C) 2012 Alexandre Moreno
  *

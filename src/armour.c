@@ -41,7 +41,7 @@
 #include <linux/filter.h>
 #include <arpa/inet.h>
 
-#include "armour_proc.h"
+#include "proc.h"
 #include "watchdog.h"
 #include "list.h"
 #include "debug.h"
