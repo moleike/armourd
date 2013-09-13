@@ -1,4 +1,4 @@
-/* vim: set sw=4 ts=4 et : */
+
 /* armour.c: process tracking
  *
  * Copyright (C) 2012 Alexandre Moreno
@@ -244,7 +244,7 @@ static int armour_signal_handler (int fd, unsigned int events, void *data)
     if (SIGCHLD == siginfo.ssi_signo) {
         pid_t pid;
         while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
-            DPRINT ("child %d exited", pid);
+            log_debug ("child %d exited", pid);
     } else {
         psignal (siginfo.ssi_signo, "armourd");
         self->running = 0;
@@ -375,7 +375,7 @@ int armour_init (armour_t **handle, const char *config_file)
             if ((p = armour_lookup_exe (self, exe))) {
                 if (armour_proc_set_param (p, pid) == -1) {
                     /* failed to initialize */
-                    warn ("failed to track %s", p->exe);
+                    log_error ("failed to track %s", p->exe);
 		        }
             }
             free (namelist[n]);
@@ -431,7 +431,7 @@ int armour_remove_watch (armour_t *self, pid_t pid)
     
     p = armour_lookup_pid (self, pid);
     if (p) {
-        DPRINT ( "removing watch from %s", p->exe);
+        log_info ("removing watch from %s", p->exe);
         p->flags &= ~ARPROC_RUNNING;
     }
     return 0;
@@ -443,12 +443,13 @@ int armour_recover (armour_t *self, pid_t pid)
     
     p = armour_lookup_pid (self, pid);
     if (p){
+        log_info ("%s(%ld) crashed", p->exe, (long)p->pid);
+
         if (armour_proc_recover (p, NULL) < 0) {
-            DPRINT ("cannot recover %s", p->exe);
+            log_error ("cannot recover %s", p->exe);
             return -1;
         } 
         p->flags |= ARPROC_RECOVERING;
-        DPRINT ("recovered %s", p->exe);
     }
     return 0;
 }
@@ -485,7 +486,7 @@ int armour_update_watch (armour_t *self, pid_t pid)
         proc->pid = pid;
         proc->flags |= ARPROC_RUNNING; /* redundant */
         proc->flags &= ~ARPROC_SETSID; /* setsid()'s itself */
-        DPRINT ("updated watch for %s", proc->exe);
+        log_info ("updated watch for %s(%ld)", proc->exe, (long)pid);
         free (exe);
         return 0;
     }
@@ -498,7 +499,7 @@ int armour_update_watch (armour_t *self, pid_t pid)
                 proc->pid = pid;
                 proc->flags |= ARPROC_RUNNING;
                 proc->flags &= ~ARPROC_SETSID;
-                DPRINT ("updated watch for %s", proc->exe);
+                log_info ("updated watch for %s(%ld)", proc->exe, (long)pid);
                 break;
             }
         }
@@ -522,15 +523,14 @@ int armour_add_watch (armour_t *self, pid_t pid)
         if (strcmp (proc->exe, path) == 0) {
             if (proc->flags & ARPROC_RECOVERING) {
                 proc->pid = pid;
-                DPRINT ("flags are %x", proc->flags);
                 proc->flags &= ~ARPROC_RECOVERING;
-                DPRINT ("recover watch to %s", proc->exe);
+                log_info ("recovered %s", proc->exe);
                 break;
             } else if (!(proc->flags & ARPROC_RUNNING)) {
                 armour_proc_free_param (proc);
                 armour_proc_set_param (proc, pid);
                 proc->flags |= ARPROC_RUNNING;
-                DPRINT ("adding watch to %s", proc->exe);
+                log_info ("adding watch to %s", proc->exe);
                 break;
             }
         }

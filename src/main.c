@@ -32,6 +32,7 @@
 #include "config.h"
 #include "armour.h"
 #include "armour_dbus.h"
+#include "log.h"
 
 static int daemon_mode = 0;
 
@@ -96,8 +97,9 @@ static void get_options (int argc, char **argv)
         static const struct option long_options[] = {
             {"daemon", 0, NULL, 'd'},
             {"config-file", 1, NULL, 'c'},
+            {"verbose" , 0, NULL, 'v'},
             {"help" , 0, NULL, 'h'},
-            {"version" , 0, NULL, 'v'},
+            {"version" , 0, NULL, 'V'},
             {0, 0, 0, 0},
         };
 
@@ -108,11 +110,15 @@ static void get_options (int argc, char **argv)
         switch (c) {
             case 'd':
                 daemon_mode = 1;
+                enable_syslog("armourd");
+                break;
+            case 'v':
+                _verbose = 1;
                 break;
             case 'c':
                 config_file = strdup (optarg);
                 break;
-            case 'v':
+            case 'V':
                 version ();
                 break;
             case 'h':

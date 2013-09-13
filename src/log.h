@@ -26,15 +26,15 @@
 extern int _verbose;
 
 #define log_error(format, ...)                          \
-    log_printf (LOG_ERR, format, ##__VA_ARGS__)
+    log_printf (LOG_ERR, format "\n", ##__VA_ARGS__)
 
 #define log_info(format, ...)                           \
-    log_printf (LOG_INFO, format, ##__VA_ARGS__)
+    log_printf (LOG_INFO, format "\n", ##__VA_ARGS__)
 
 #define log_debug(format, ...)			                \
     do {                                                \
         if (_verbose) log_printf (LOG_DEBUG,            \
-        "%s:%u:%s: " format,                            \
+        "%s:%u:%s: " format "\n",                       \
         __FILE__, __LINE__, __func__, ##__VA_ARGS__);   \
     } while (0)
 
