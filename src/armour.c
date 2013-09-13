@@ -41,11 +41,12 @@
 #include <linux/filter.h>
 #include <arpa/inet.h>
 
-#include "debug.h"
 #include "armour_proc.h"
 #include "watchdog.h"
-#include "armour.h"
 #include "list.h"
+#include "debug.h"
+#include "log.h"
+#include "armour.h"
 
 static int _proc_pid_filter (const struct dirent *dirent)
 {
