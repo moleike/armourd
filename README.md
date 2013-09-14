@@ -25,7 +25,7 @@ $ echo '/usr/local/bin/*' > /etc/armourd.conf
 ```
 
 armourd recovers processes that stopped abnormally, by returning a nonzero exit
-code; it does not recover applications hanging. Forking servers will have their
+code; *it does not recover applications hanging*. Forking servers will have their
 children terminate before restart. Although it is designed to recover system
 daemon programs, it can actually recover any application, with the limitation
 that currently only supports single-instance applications unless using the
@@ -67,12 +67,14 @@ The minimum required versions are:
 System Recovery
 ---------------
 
-armourd just does individual service recovery; it does not perform system
-recovery, i.e. talk to watchdog hardware.  In order to make your system fully
-reliable, you should have a process feeding a watchdog, although your mileage
-may vary.  Linux provides a very simple interface to watchdog timers
-(`/dev/watchdog`) that armourd will implement as a non-default feature, to
-provide an all-round solution.
+armourd can also be configured to talk to watchdog hardware.  In order to 
+make your system fully reliable, you should have a process feeding a watchdog, 
+although your mileage may vary.  Linux provides a very simple interface to watchdog timers
+(`/dev/watchdog`) that armourd implements as a non-default feature, to
+provide an all-round solution. To enable it:
+```
+./configure --enable-watchdog
+```
 
 D-Bus Interface
 ---------------
