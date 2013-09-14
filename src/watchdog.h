@@ -2,6 +2,7 @@
 /* armour_watchdog.h: watchdog interface
  *
  * Copyright (C) 2013 Phil Chen
+ * Copyright (C) 2013 Alexandre Moreno
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,6 +22,8 @@
 #ifndef _ARMOUR_WATCHDOG_H
 #define _ARMOUR_WATCHDOG_H
 
+#include "config.h"
+
 #define WATCHDOG_DEV		"/dev/watchdog"
 #define WATCHDOG_TIMEOUT	30
 #define WATCHDOG_KEEPALIVE	15
@@ -33,7 +36,14 @@ typedef struct {
 	int keepalive;
 } armour_watchdog;
 
-int armour_watchdog_init(armour_watchdog *);
-void armour_watchdog_ping(armour_watchdog *);
+#ifdef HAVE_WATCHDOG
+int armour_watchdog_init (armour_watchdog *);
+void armour_watchdog_ping (armour_watchdog *);
+#else
+static inline 
+int armour_watchdog_init (armour_watchdog *wd) { return 0; }
+static inline 
+void armour_watchdog_ping (armour_watchdog *wd) { }
+#endif
 
 #endif //_ARMOUR_WATCHDOG_H

@@ -25,9 +25,16 @@ AS_IF([test "x$have_dbus" = "xyes"],
       ])
 ])
 
+# watchdog timer stuff
+AC_ARG_ENABLE([watchdog],
+    AS_HELP_STRING([--enable-watchdog], [tick a watchdog timer. Defaults to /dev/watchdog]))
+
+AS_IF([test "x$enable_watchdog" = "xyes"],
+      [AC_DEFINE([HAVE_WATCHDOG], [], [kick the watchdog])
+      ])
+
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
-
 
 # Checks for header files.
 AC_CHECK_HEADERS([err.h sys/signalfd.h sys/epoll.h linux/netlink.h \

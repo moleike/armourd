@@ -18,6 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
+
+#include "config.h"
+
+#ifdef HAVE_WATCHDOG
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -77,4 +81,5 @@ watchdog_init_fail:
 	wd->fd = 0;
 	return -1;
 }
+#endif
 
