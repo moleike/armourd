@@ -317,7 +317,7 @@ int armour_proc_set_param (armour_proc *p, pid_t pid)
     p->pid = pid;
     errno = 0;
 
-    armour_proc_set_param_environ(p, NULL);
+    armour_proc_set_param_environ (p, NULL);
     armour_proc_set_param_cmdline (p, NULL);
     armour_proc_set_param_cwd (p, NULL);
     armour_proc_set_param_root (p, NULL);
@@ -325,10 +325,10 @@ int armour_proc_set_param (armour_proc *p, pid_t pid)
     armour_proc_set_param_ugid (p, NULL);
     armour_proc_set_param_comm (p, NULL);
     
-    /* seems redundant but do we need to check too pgid ? */ 
     if (pid == getsid (pid)) {
         p->flags |= ARPROC_SETSID;
     }
+
     // TODO: remove. This is unnecessary once we add 
     // syslog or whatever logging facility
     // plus doesnt need to be a per-process feature
@@ -507,4 +507,10 @@ int armour_proc_recover (armour_proc *proc, void *data)
             break;
     }
     return 0;
+}
+
+int armour_proc_cleanup (armour_proc *proc)
+{
+    /* if 'proc' was a process group leader, terminate children */
+    return kill (-proc->pid, SIGTERM);
 }

@@ -96,5 +96,6 @@ int             armour_proc_recover             (armour_proc *p, void *data);
 char           *armour_proc_readlink            (pid_t pid, const char *filename);
 char           *armour_proc_read                (pid_t pid, const char *filename);
 pid_t           armour_proc_getppid             (pid_t pid, void *data);
+int             armour_proc_cleanup             (armour_proc *p);
 
 #endif //_ARMOUR_PROC_H

@@ -445,6 +445,8 @@ int armour_recover (armour_t *self, pid_t pid)
     if (p){
         log_info ("%s(%ld) crashed", p->exe, (long)p->pid);
 
+        (void)armour_proc_cleanup (p);
+
         if (armour_proc_recover (p, NULL) < 0) {
             log_error ("cannot recover %s", p->exe);
             return -1;
