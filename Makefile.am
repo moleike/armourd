@@ -8,7 +8,7 @@ armourd_SOURCES = 	\
 	src/main.c
 
 if DBUS
-armourd_SOURCES += dbus/armour_dbus.c
+armourd_SOURCES += src/dbus/armour_dbus.c
 endif
 
 armourd_LDADD = $(DBUS_LIBS)
