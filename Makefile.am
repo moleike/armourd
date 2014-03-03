@@ -12,7 +12,7 @@ armourd_SOURCES += dbus/armour_dbus.c
 endif
 
 armourd_LDADD = $(DBUS_LIBS)
-AM_CPPFLAGS = -DSYSCONFDIR=\"${sysconfdir}\" -I./src -I./src/dbus #-D_FORTIFY_SOURCE=0
+AM_CPPFLAGS = -DSYSCONFDIR=\"${sysconfdir}\" -I$(srcdir)/src -I$(srcdir)/src/dbus #-D_FORTIFY_SOURCE=0
 AM_CFLAGS = -Wall -fms-extensions -Wno-unused-result -std=gnu99 $(DBUS_CFLAGS)
 sysconf_DATA = armourd.conf
 
