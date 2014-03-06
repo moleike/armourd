@@ -1,13 +1,11 @@
 armourd
 =======
 
-> A Linux daemon for service recovery targeted at embedded systems running GNU/Linux.
+> A Linux daemon for process monitoring targeted at embedded systems running GNU/Linux.
 
-When a watched application crashes, armourd will automatically restart it. To
-watch an application armourd only needs the file path of the application
-executable; no PID files, no shell scripts. This is achieved by jointly
-tracking the creation/termination of processes and collecting process
-information.
+armourd restarts processes that stopped abnormally, by returning a nonzero exit
+code. To watch an application armourd only needs the file path of the application
+executable; no PID files, *no shell scripts*.
 
 It works out of the box, as it takes roughly a couple of minutes to set it up.
 Upon startup armourd interprets its configuration file,
@@ -24,15 +22,7 @@ binaries under /usr/local/bin/:
 $ echo '/usr/local/bin/*' > /etc/armourd.conf
 ```
 
-armourd recovers processes that stopped abnormally, by returning a nonzero exit
-code; *it does not recover applications hanging*. Forking servers will have their
-children terminate before restart. Although it is designed to recover system
-daemon programs, it can actually recover any application, with the limitation
-that currently only supports single-instance applications unless using the
-[D-Bus](http://dbus.freedesktop.org/) interface (see below).
-
 See [INSTALL](INSTALL) for details on how to build and run.
-
 
 Goals
 -----
@@ -42,8 +32,8 @@ Goals
 * small memory footprint
 * fast recovery of processes
 
-Notes
------
+Caveats
+-------
 
 armourd is Linux-only by design, because it relies upon interfaces such as
 [epoll(7)](http://man7.org/linux/man-pages/man7/epoll.7.html) or [netlink(7)](http://man7.org/linux/man-pages/man7/netlink.7.html) 
@@ -52,6 +42,16 @@ files that aren't available in other unices.
 It is more suited to sysvinit-based systems; newer init systems, such as
 [upstart](http://upstart.ubuntu.com/) or [systemd](http://www.freedesktop.org/wiki/Software/systemd/), 
 service recovery is readily available.
+
+armourd does not start services, i.e. its not an init daemon; on the other hand, 
+it runs independently of your init system, and thus is portable across Linux devices.
+
+Forking servers will have their children terminate before restart. Although it is 
+designed to recover system daemon programs, it can actually recover any application, 
+with the limitation that currently only supports single-instance applications 
+unless using the [D-Bus](http://dbus.freedesktop.org/) interface (see below).
+
+*It does not recover applications hanging*. 
 
 Dependencies
 ------------
