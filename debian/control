@@ -1,0 +1,13 @@
+Source: armourd
+Maintainer: Alex Moreno <alexmorenocano@yahoo.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.3
+Build-Depends: debhelper (>= 9)
+
+Package: armourd
+Architecture: any
+Depends: ${misc:Depends}
+Description: monitor processes and restart them as needed. 
+ armourd restarts applications that exited with a nonzero exit code.
+ Embarrassingly simple to set up, small and really, really fast.
