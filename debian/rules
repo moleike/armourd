@@ -2,5 +2,5 @@
 %:
 	dh $@
 
-override_dh_auto_install:
-	$(MAKE) DESTDIR=$$(pwd)/debian/armourd prefix=/usr/local install
+#override_dh_auto_install:
+#	$(MAKE) DESTDIR=$$(pwd)/debian/armourd prefix=/usr/local install
