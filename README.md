@@ -1,28 +1,38 @@
 armourd
 =======
 
-> A Linux daemon for process monitoring targeted at embedded systems running GNU/Linux.
+> fast watchdog daemon for embedded systems running GNU/Linux.
 
-armourd restarts processes that stopped abnormally, by returning a nonzero exit
-code. To watch an application armourd only needs the file path of the application
-executable; no PID files, *no shell scripts*.
+armourd restarts processes that stopped abnormally, by returning a *non-zero* 
+exit status code. To watch an application armourd only needs the file 
+path of the application executable; *no PID files*, *no shell scripts*.
 
 It works out of the box, as it takes roughly a couple of minutes to set it up.
 Upon startup armourd interprets its configuration file,
 which lists the pathnames of the services that need to be watched, e.g.:
 
-```sh
-$ echo '/opt/foo' > /etc/armourd.conf
-$ echo '/opt/bar' >> /etc/armourd.conf
 ```
+# echo 'path/to/foo' > /etc/armourd.conf
+# echo 'path/to/bar' >> /etc/armourd.conf
+```
+Will put your _foo_ and _bar_ daemons under the watch of armourd.
+
 You can also use file-name globs ('*' wildcard). For example, to watch all the
 binaries under /usr/local/bin/:
 
-```sh
-$ echo '/usr/local/bin/*' > /etc/armourd.conf
+```
+# echo '/usr/local/bin/*' > /etc/armourd.conf
 ```
 
-See [INSTALL](INSTALL) for details on how to build and run.
+Install
+-------
+```
+ $ ./autogen.sh
+ $ mkdir build && cd build
+ $ ../configure
+ $ make
+ $ make install
+```
 
 Goals
 -----
@@ -31,6 +41,25 @@ Goals
 * no library dependencies (other than the C library)
 * small memory footprint
 * fast recovery of processes
+
+System Recovery
+---------------
+
+armourd can also be configured to talk to watchdog hardware.  In order to 
+make your system fully reliable, you should have a process feeding a watchdog, 
+although your mileage may vary.  Linux provides a very simple interface to watchdog timers
+(`/dev/watchdog`) that armourd implements as a non-default feature, to
+provide an all-round solution. To enable it:
+```
+./configure --enable-watchdog
+```
+
+How it works
+------------
+
+Reads kernel events from the proc connector, combined with the use of a socket filter (BPF) to keep things quiet. The proc connector is built on top of the generic connector and that itself is on top of netlink.
+
+For more information, you can read this excellent post from Scott Remnant: http://netsplit.com/2011/02/09/the-proc-connector-and-socket-filters/
 
 Caveats
 -------
@@ -63,18 +92,6 @@ The minimum required versions are:
 * GCC 4.1
 * Autoconf 2.50
 * D-Bus 1.6.x (not required)
-
-System Recovery
----------------
-
-armourd can also be configured to talk to watchdog hardware.  In order to 
-make your system fully reliable, you should have a process feeding a watchdog, 
-although your mileage may vary.  Linux provides a very simple interface to watchdog timers
-(`/dev/watchdog`) that armourd implements as a non-default feature, to
-provide an all-round solution. To enable it:
-```
-./configure --enable-watchdog
-```
 
 D-Bus Interface
 ---------------
