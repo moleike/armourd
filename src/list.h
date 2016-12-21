@@ -66,14 +66,5 @@
     _p;                                     \
 })
 
-/*
- * we could use gcc __builtin_types_compatible_p to have a generic LOOKUP
- * routine, but it generates syntax errors for the unused expressions even when
- * used in combination with __builtin_choose_expr, which is ugly, and then
- * you'd need to _Pragma()-disable the warning...  C11 _Generic (currently
- * supported in clang) would do a better job, combined with gcc statement
- * expressions.
- */
-
 #endif /* _ARMOUR_LIST_H */
 
