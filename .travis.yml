@@ -1,4 +1,4 @@
 language: c
 compiler: gcc
 os: linux
-script: ./configure && make
+script: ./autogen.sh && ./configure && make
