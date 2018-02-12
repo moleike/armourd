@@ -6,22 +6,13 @@ armourd restarts processes that stopped abnormally, by returning a *non-zero*
 exit status code. To watch an application armourd only needs the file 
 path of the application executable; *no PID files*, *no shell scripts*.
 
-It works out of the box, as it takes roughly a couple of minutes to set it up.
-Upon startup armourd interprets its configuration file,
-which lists the pathnames of the services that need to be watched, e.g.:
+Goals
+-----
 
-```
-# echo 'path/to/foo' > /etc/armourd.conf
-# echo 'path/to/bar' >> /etc/armourd.conf
-```
-Will put your _foo_ and _bar_ daemons under the watch of armourd.
-
-You can also use file-name globs ('*' wildcard). For example, to watch all the
-binaries under /usr/local/bin/:
-
-```
-# echo '/usr/local/bin/*' > /etc/armourd.conf
-```
+* painless configuration
+* no library dependencies (other than the C library)
+* small memory footprint
+* fast recovery of processes
 
 Install
 -------
@@ -33,13 +24,24 @@ Install
  $ make install
 ```
 
-Goals
------
+Config file
+-----------
 
-* simplest possible configuration
-* no library dependencies (other than the C library)
-* small memory footprint
-* fast recovery of processes
+Holds an entry for each service that needs to be watched, e.g.:
+
+```
+# echo 'path/to/foo' > /etc/armourd.conf
+# echo 'path/to/bar' >> /etc/armourd.conf
+```
+
+Will put your _foo_ and _bar_ daemons under the watch of armourd.
+
+You can also use file-name globs ('*' wildcard). For example, to watch all the
+binaries under /usr/local/bin/:
+
+```
+# echo '/usr/local/bin/*' > /etc/armourd.conf
+```
 
 System Recovery
 ---------------
