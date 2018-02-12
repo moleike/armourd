@@ -1,5 +1,4 @@
-armourd
-=======
+# armourd [![Build Status](https://travis-ci.org/moleike/armourd.svg?branch=master)](https://travis-ci.org/moleike/armourd)
 
 > fast watchdog daemon for embedded systems running GNU/Linux.
 
